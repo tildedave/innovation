@@ -2,4 +2,4 @@
   (:require [innovation.core :refer :all]))
 
 ; TODO dogmas
-(def sailing (->Card "Sailing" 1 [] ['crown 'crown nil 'leaf]))
+(def sailing (->Card "Sailing" 'green 1 [] ['crown 'crown nil 'leaf]))

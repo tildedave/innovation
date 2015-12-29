@@ -1,5 +1,12 @@
 (ns innovation.core)
 
+; colors:
+; - green
+; - yellow
+; - blue
+; - red
+; - purple
+
 ; resources:
 ; - crown
 ; - leaf
@@ -8,7 +15,7 @@
 ; - clock
 ; - lightbulb
 
-(defrecord Card [title age dogmas resources])
+(defrecord Card [title color age dogmas resources])
 
 ; splay-directions:
 ; - nil (no splay)
@@ -18,9 +25,14 @@
 
 (defrecord Pile [cards splay-direction])
 
-(defrecord PlayerBoard [piles hand])
+(defrecord PlayArea [piles score-pile achivements hand])
 
-(defrecord Board [player-boards])
+(defn make-empty-play-area 
+  "Create a new play area with empty piles, score pile, hand, and no achievements"
+  []
+  (->PlayArea {} [] [] []))
+
+(defrecord Board [play-areas])
 
 (defn count-card-resources
   "Count the number of resources on a card"
@@ -30,7 +42,7 @@
     0 
     (:resources card)))
 
-(defn filter-card-resources 
+(defn- filter-card-resources 
   "Filter out resources in a card (for splaying calculation)"
   [f card]
   (update-in 
@@ -50,8 +62,29 @@
       0
       (cons first-card
         (let [filter-fn (condp = (:splay-direction pile)
-            nil (fn [x] false)
-            'left #(= % 3)
+            nil    (fn [x] false)
+            'left  #(= % 3)
             'right #(or (= % 0) (= % 1))
-            'up #(> % 0))]
+            'up    #(> % 0))]
           (map #(filter-card-resources filter-fn %) rest-cards))))))
+
+(defn update-play-area-pile
+  [play-area select-fn update-fn]
+  (update play-area :piles (fn [piles] 
+    (update-fn (some select-fn piles)))))
+
+(defn meld-card-to-play-area
+  "Meld a card onto a play area. Creates a new pile if the color does not yet exist"
+  [play-area card]
+  (update-in play-area [:piles (:color card)]
+    (fn [pile]
+      (if (nil? pile) 
+        (->Pile [card] nil)
+        (update pile :cards (fn [cards] (cons card cards)))))))
+
+(defn play-area-age
+  "Determine which age a play-area is in"
+  [play-area]
+  (reduce max
+    -1
+    (map #(:age (first (:cards %))) (vals (:piles play-area)))))
