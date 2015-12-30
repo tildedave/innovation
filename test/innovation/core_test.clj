@@ -4,13 +4,14 @@
 
 
 (def test-card (->Card "Test Card" :green 2 [] ['crown 'crown nil 'leaf]))
+(def test-card-first-age (assoc test-card :age 1))
 
 (deftest card-test
   (testing "can make a card"
     (is (= (:title test-card "Test Card")) "Card has expected title")
     (is (= (:age test-card 2)) "Card has expected age")
   (testing "has expected resources"
-    (is (= (count-card-resources test-card 'crown) 2) 
+    (is (= (count-card-resources test-card 'crown) 2)
       "Card has expected number of crowns")
     (is (= (count-card-resources test-card 'leaf) 1)
       "Card has expected number of leaves")
@@ -62,7 +63,7 @@
   [pile age]
   (update pile :cards (fn [cards] (cons (assoc (first cards) :age age) (rest cards)))))
 
-(def test-play-area (->PlayArea 
+(def test-play-area (->PlayArea
   {:green (make-color test-pile :green), :red (make-color test-pile :red)}
   [test-card (assoc test-card :age 2)]
   [test-card]
@@ -78,14 +79,44 @@
            (make-color test-pile :red)) "red pile was as expected"))
   (testing "determines 'age' of play area"
     (is (= (play-area-age test-play-area) 2) "age was as expected")
-    (is (= 
+    (is (=
         (play-area-age (assoc test-play-area :piles {:green (make-age test-pile 1)}))
         1)
-      "age was as expected"))
+      "age was as expected")))
+
+(deftest meld-card-test
   (testing "meld a card"
-    (is (= (-> (meld-card-to-play-area empty-play-area test-card) :piles :green)
+    (is (= (-> (meld-card empty-play-area test-card) :piles :green)
            (->Pile [test-card] nil))
       "Melding a card creates an empty pile")
-    (is (= (:piles (meld-card-to-play-area (meld-card-to-play-area empty-play-area test-card) test-card))
-           {:green (->Pile [test-card test-card] nil)})
-      "Melding the same card card twice creates a pile with two cards")))
+    (is (=
+      (-> empty-play-area
+        (#(meld-card % test-card))
+        (#(meld-card % test-card-first-age))
+        :piles
+        :green)
+      (->Pile [test-card-first-age test-card] nil))
+      "Melding the same color twice creates a pile with second card on top")
+    (let [test-card-red (assoc test-card :color :red)
+          play-area-with-two-piles
+            (-> empty-play-area
+              (#(meld-card % test-card))
+              (#(meld-card % test-card-red)))]
+      (is (= (-> play-area-with-two-piles :piles :red) (->Pile [test-card-red] nil))
+        "Melding creates a new test pile (red card)")
+      (is (= (-> play-area-with-two-piles :piles :green) (->Pile [test-card] nil))
+        "Melding creates a new test pile (green card)"))))
+
+(deftest tuck-card-test
+  (testing "tuck a card"
+    (is (= (-> (tuck-card empty-play-area test-card) :piles :green)
+           (->Pile [test-card] nil))
+      "Tucking a card creates an empty pile")
+    (is (=
+      (-> empty-play-area
+        (#(tuck-card % test-card))
+        (#(tuck-card % test-card-first-age))
+        :piles
+        :green)
+      (->Pile [test-card test-card-first-age] nil))
+      "Tucking the same color twice creates a pile with second card on bottom")))

@@ -27,6 +27,11 @@
 
 (defrecord PlayArea [piles score-pile achivements hand])
 
+(defn make-pile
+  "Create a new pile with the given card"
+  [card]
+  (->Pile [card] nil))
+
 (defn make-empty-play-area 
   "Create a new play area with empty piles, score pile, hand, and no achievements"
   []
@@ -68,19 +73,24 @@
             'up    #(> % 0))]
           (map #(filter-card-resources filter-fn %) rest-cards))))))
 
-(defn update-play-area-pile
-  [play-area select-fn update-fn]
-  (update play-area :piles (fn [piles] 
-    (update-fn (some select-fn piles)))))
-
-(defn meld-card-to-play-area
+(defn meld-card
   "Meld a card onto a play area. Creates a new pile if the color does not yet exist"
   [play-area card]
   (update-in play-area [:piles (:color card)]
     (fn [pile]
       (if (nil? pile) 
-        (->Pile [card] nil)
+        (make-pile card)
         (update pile :cards (fn [cards] (cons card cards)))))))
+
+(defn tuck-card
+  "Tuck a card onto the play area. Creates a new pile if the color does not yet exist"
+  [play-area card]
+  (update-in play-area [:piles (:color card)]
+    (fn [pile]
+      (if (nil? pile)
+        (make-pile card)
+        (update pile :cards (fn [cards] (conj cards card)))))))
+
 
 (defn play-area-age
   "Determine which age a play-area is in"
