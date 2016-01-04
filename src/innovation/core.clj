@@ -111,6 +111,10 @@
         (make-pile card)
         (update pile :cards (fn [cards] (conj cards card)))))))
 
+(defn score-card
+  "Score a card onto the play area"
+  [play-area card]
+  (update play-area :score-pile (fn [pile] (cons card pile))))
 
 (defn play-area-age
   "Determine which age a play-area is in"

@@ -123,7 +123,7 @@
 
 (def test-supply-pile (->SupplyPile {1 [], 2 [test-card]}))
 
-(deftest supply-pile-test
+(deftest draw-card-test
   (testing "draw a card (no age fallback)"
     (let [result (draw-card test-supply-pile 2)]
       (is (= (:card result) test-card)
@@ -142,7 +142,9 @@
       (is (= (:card result) test-card)
         "Drawing a card from a higher age fell back multiple times")
       (is (= (:supply-pile result) (->SupplyPile {1 [test-card], 2 [], 3 [], 4 []}))
-        "Drawing a card from a higher age fell back multiple times")))
+        "Drawing a card from a higher age fell back multiple times"))))
+
+(deftest return-card-test
   (testing "return a card"
     (is (= (return-card test-supply-pile test-card-red)
            (->SupplyPile {1 [], 2 [test-card test-card-red]}))
@@ -150,3 +152,8 @@
     (is (= (return-card test-supply-pile test-card-first-age)
            (->SupplyPile {1 [test-card-first-age], 2 [test-card]}))
       "Returning a card put it on the bottom of an empty supply pile")))
+
+(deftest score-card-test
+  (testing "score a card"
+    (is (= (:score-pile (score-card empty-play-area test-card)) [test-card])
+      "Scoring a card added it to the score pile")))
