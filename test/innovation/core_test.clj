@@ -4,6 +4,7 @@
 
 
 (def test-card (->Card "Test Card" :green 2 [] ['crown 'crown nil 'leaf]))
+(def test-card-red (assoc test-card :color :red))
 (def test-card-first-age (assoc test-card :age 1))
 
 (deftest card-test
@@ -58,7 +59,7 @@
   [pile color]
   (update pile :cards (fn [cards] (map #(assoc % :color color) cards))))
 
-(defn- make-age
+(defn- make-pile-age
   "Transform a pile to a different age (top card) for testing"
   [pile age]
   (update pile :cards (fn [cards] (cons (assoc (first cards) :age age) (rest cards)))))
@@ -80,7 +81,7 @@
   (testing "determines 'age' of play area"
     (is (= (play-area-age test-play-area) 2) "age was as expected")
     (is (=
-        (play-area-age (assoc test-play-area :piles {:green (make-age test-pile 1)}))
+        (play-area-age (assoc test-play-area :piles {:green (make-pile-age test-pile 1)}))
         1)
       "age was as expected")))
 
@@ -97,8 +98,7 @@
         :green)
       (->Pile [test-card-first-age test-card] nil))
       "Melding the same color twice creates a pile with second card on top")
-    (let [test-card-red (assoc test-card :color :red)
-          play-area-with-two-piles
+    (let [play-area-with-two-piles
             (-> empty-play-area
               (#(meld-card % test-card))
               (#(meld-card % test-card-red)))]
@@ -120,3 +120,33 @@
         :green)
       (->Pile [test-card test-card-first-age] nil))
       "Tucking the same color twice creates a pile with second card on bottom")))
+
+(def test-supply-pile (->SupplyPile {1 [], 2 [test-card]}))
+
+(deftest supply-pile-test
+  (testing "draw a card (no age fallback)"
+    (let [result (draw-card test-supply-pile 2)]
+      (is (= (:card result) test-card)
+        "Drawing a card returned the top card for the age")
+      (is (= (:supply-pile result) (->SupplyPile {1 (), 2 ()}))
+        "Drawing a card returned an updated supply pile")))
+  (testing "draw a card (age fallback)"
+    (let [result (draw-card test-supply-pile 1)]
+      (is (= (:card result) test-card)
+        "Drawing a card from an empty age defaulted to the next one")
+      (is (= (:supply-pile result) (->SupplyPile {1 (), 2 ()}))
+        "Drawing a card returned an updated supply pile")))
+  (testing "draw a card from higher age"
+    (let [result
+      (draw-card (->SupplyPile {1 [test-card], 2 [], 3 [], 4 [test-card]}) 2)]
+      (is (= (:card result) test-card)
+        "Drawing a card from a higher age fell back multiple times")
+      (is (= (:supply-pile result) (->SupplyPile {1 [test-card], 2 [], 3 [], 4 []}))
+        "Drawing a card from a higher age fell back multiple times")))
+  (testing "return a card"
+    (is (= (return-card test-supply-pile test-card-red)
+           (->SupplyPile {1 [], 2 [test-card test-card-red]}))
+      "Returning a card put it on the bottom of the supply pile")
+    (is (= (return-card test-supply-pile test-card-first-age)
+           (->SupplyPile {1 [test-card-first-age], 2 [test-card]}))
+      "Returning a card put it on the bottom of an empty supply pile")))

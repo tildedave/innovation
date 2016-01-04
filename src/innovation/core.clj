@@ -32,25 +32,27 @@
   [card]
   (->Pile [card] nil))
 
-(defn make-empty-play-area 
+(defn make-empty-play-area
   "Create a new play area with empty piles, score pile, hand, and no achievements"
   []
   (->PlayArea {} [] [] []))
+
+(defrecord SupplyPile [age-map])
 
 (defrecord Board [play-areas])
 
 (defn count-card-resources
   "Count the number of resources on a card"
   [card resource-to-find]
-  (reduce 
+  (reduce
     #(if (= %2 resource-to-find) (+ %1 1) %1)
-    0 
+    0
     (:resources card)))
 
-(defn- filter-card-resources 
+(defn- filter-card-resources
   "Filter out resources in a card (for splaying calculation)"
   [f card]
-  (update-in 
+  (update-in
     card
     [:resources]
     (fn [x]
@@ -61,7 +63,7 @@
   "Count the number of resources on a pile"
   [pile resource-to-find]
   (let [first-card (first (:cards pile)) rest-cards (rest (:cards pile))]
-    (reduce 
+    (reduce
       ; there's a better way to do this I think
       #(+ %1 (count-card-resources %2 resource-to-find))
       0
@@ -73,12 +75,30 @@
             'up    #(> % 0))]
           (map #(filter-card-resources filter-fn %) rest-cards))))))
 
+(defn draw-card
+  "Draw a card from a supply pile.  Returns the card drawn and a new supply pile"
+  [supply-pile age]
+  (let [age-map (:age-map supply-pile)
+        result (first (filter #(and (> (count (second %)) 0) (>= (first %) 2)) age-map))
+        actual-age (first result)
+        cards (second result)]
+    {:card (first cards),
+     :supply-pile (update supply-pile :age-map (fn [map] (assoc map actual-age (rest cards))))}))
+
+(defn return-card
+  "Return a card to a supply pile."
+  [supply-pile card]
+  (update
+    supply-pile
+    :age-map
+    (fn [map] (update map (:age card) #(conj % card)))))
+
 (defn meld-card
   "Meld a card onto a play area. Creates a new pile if the color does not yet exist"
   [play-area card]
   (update-in play-area [:piles (:color card)]
     (fn [pile]
-      (if (nil? pile) 
+      (if (nil? pile)
         (make-pile card)
         (update pile :cards (fn [cards] (cons card cards)))))))
 
