@@ -80,6 +80,7 @@
            (make-color test-pile :red)) "red pile was as expected"))
   (testing "determines 'age' of play area"
     (is (= (play-area-age test-play-area) 2) "age was as expected")
+    (is (= (play-area-age empty-play-area) 1) "no cards means age is 1")
     (is (=
         (play-area-age (assoc test-play-area :piles {:green (make-pile-age test-pile 1)}))
         1)
@@ -157,3 +158,21 @@
   (testing "score a card"
     (is (= (:score-pile (score-card empty-play-area test-card)) [test-card])
       "Scoring a card added it to the score pile")))
+
+(def hand-card (assoc test-card :title "Card from Hand"))
+
+(def current-player-area
+  (assoc empty-play-area
+    :hand [hand-card]
+    :piles {:red (->Pile [test-card] nil)}))
+
+(def test-game-state
+  (->GameState [empty-play-area current-player-area] test-supply-pile [test-card-first-age] 1 2))
+
+(deftest game-test-state
+  (testing "game state"
+    (let [next-moves (generate-possible-moves test-game-state)]
+      (is (some #(= ['draw 2] %) next-moves)
+        "Drawing from the current age was a possible next move")
+      (is (some #(= ['meld hand-card] %) next-moves)
+        "Melding a card from the hand was a possible next move"))))

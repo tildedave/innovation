@@ -39,7 +39,7 @@
 
 (defrecord SupplyPile [age-map])
 
-(defrecord Board [play-areas])
+(defrecord GameState [play-areas supply-pile available-achievements player-index actions-left])
 
 (defn count-card-resources
   "Count the number of resources on a card"
@@ -120,5 +120,14 @@
   "Determine which age a play-area is in"
   [play-area]
   (reduce max
-    -1
+    1
     (map #(:age (first (:cards %))) (vals (:piles play-area)))))
+
+(defn generate-possible-moves
+  "Generate possible moves from a game state"
+  [game-state]
+  (let [current-play-area (nth (:play-areas game-state) (:player-index game-state))
+        current-age (play-area-age current-play-area)]
+    (concat
+      [['draw current-age]]
+      (map (fn [card] ['meld card]) (:hand current-play-area)))))
