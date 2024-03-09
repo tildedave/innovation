@@ -1,4 +1,5 @@
-(ns innovation.core)
+(ns innovation.core
+  (:require [clojure.tools.trace :refer :all]))
 
 ; colors:
 ; - green
@@ -26,6 +27,8 @@
 (defrecord Pile [cards splay-direction])
 
 (defrecord PlayArea [piles score-pile achivements hand])
+
+(defrecord Dogma [icon effect])
 
 (defn make-pile
   "Create a new pile with the given card"
@@ -79,10 +82,12 @@
   "Draw a card from a supply pile.  Returns the card drawn and a new supply pile"
   [supply-pile age]
   (let [age-map (:age-map supply-pile)
-        result (first (filter #(and (> (count (second %)) 0) (>= (first %) 2)) age-map))
-        actual-age (first result)
-        cards (second result)]
-    {:card (first cards),
+        ; if you tried to draw a 1 and there's no 1 available, draw the next one
+        ; actual-age iterates through the age-map to find the first pile that's
+        ; non-empty but equal to or greater than the request age, then returns those
+        ; cards
+        [actual-age cards] (first (filter #(and (> (count (second %)) 0) (>= (first %) age)) age-map))]
+    {:card (first (trace cards)),
      :supply-pile (update supply-pile :age-map (fn [map] (assoc map actual-age (rest cards))))}))
 
 (defn return-card

@@ -9,8 +9,8 @@
 
 (deftest card-test
   (testing "can make a card"
-    (is (= (:title test-card "Test Card")) "Card has expected title")
-    (is (= (:age test-card 2)) "Card has expected age")
+    (is (= (:title test-card) "Test Card") "Card has expected title")
+    (is (= (:age test-card) 2) "Card has expected age")
   (testing "has expected resources"
     (is (= (count-card-resources test-card 'crown) 2)
       "Card has expected number of crowns")
@@ -143,7 +143,11 @@
       (is (= (:card result) test-card)
         "Drawing a card from a higher age fell back multiple times")
       (is (= (:supply-pile result) (->SupplyPile {1 [test-card], 2 [], 3 [], 4 []}))
-        "Drawing a card from a higher age fell back multiple times"))))
+        "Drawing a card from a higher age fell back multiple times")))
+  (testing "draw a card from first age"
+    (let [result (draw-card (->SupplyPile {1 [test-card]}) 1)]
+      (is (= (:card result) test-card)
+        "Drew a card from first age"))))
 
 (deftest return-card-test
   (testing "return a card"
